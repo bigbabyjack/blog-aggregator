@@ -32,3 +32,19 @@ func (cfg apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusCreated, databaseUserToUser(user))
 
 }
+
+func (cfg apiConfig) handlerGetUser(w http.ResponseWriter, r *http.Request) {
+	apiKey, err := parseApiKeyFromHeader(r)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Unable to parse ApiKey")
+		return
+	}
+
+	user, err := cfg.DB.GetUser(r.Context(), apiKey)
+	if err != nil {
+		respondWithError(w, http.StatusNotFound, "Unable to find user")
+		return
+	}
+	respondWithJSON(w, http.StatusOK, databaseUserToUser(user))
+
+}
