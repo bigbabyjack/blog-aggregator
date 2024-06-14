@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (cfg apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	params := struct {
 		Name string `json:"name"`
@@ -33,18 +33,7 @@ func (cfg apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (cfg apiConfig) handlerGetUser(w http.ResponseWriter, r *http.Request) {
-	apiKey, err := parseApiKeyFromHeader(r)
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Unable to parse ApiKey")
-		return
-	}
-
-	user, err := cfg.DB.GetUser(r.Context(), apiKey)
-	if err != nil {
-		respondWithError(w, http.StatusNotFound, "Unable to find user")
-		return
-	}
+func (cfg *apiConfig) handlerGetUser(w http.ResponseWriter, r *http.Request, user database.User) {
 	respondWithJSON(w, http.StatusOK, databaseUserToUser(user))
 
 }
