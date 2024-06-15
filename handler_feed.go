@@ -36,3 +36,22 @@ func (cfg *apiConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Request, 
 
 	respondWithJSON(w, http.StatusCreated, databaseFeedToFeed(feed))
 }
+
+func (cfg *apiConfig) handlerGetFeeds(w http.ResponseWriter, r *http.Request) {
+	feeds, err := cfg.DB.GetFeeds(r.Context())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Unable to retrieve feeds")
+		return
+	}
+	response := struct {
+		Feeds []Feed `json:"feeds"`
+	}{
+		make([]Feed, len(feeds)),
+	}
+	for i, f := range feeds {
+		response.Feeds[i] = databaseFeedToFeed(f)
+	}
+
+	respondWithJSON(w, http.StatusOK, response)
+
+}
