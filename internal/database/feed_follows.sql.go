@@ -12,6 +12,16 @@ import (
 	"github.com/google/uuid"
 )
 
+const deleteFeedFollow = `-- name: DeleteFeedFollow :exec
+DELETE FROM feedfollows
+    WHERE id=$1
+`
+
+func (q *Queries) DeleteFeedFollow(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteFeedFollow, id)
+	return err
+}
+
 const followFeed = `-- name: FollowFeed :one
 INSERT INTO feedfollows (
     id, created_at, updated_at, user_id, feed_id
