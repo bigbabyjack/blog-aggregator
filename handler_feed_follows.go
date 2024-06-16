@@ -58,3 +58,22 @@ func (cfg *apiConfig) handlerDeleteFollow(w http.ResponseWriter, r *http.Request
 	}{"Successfully unfollowed."})
 
 }
+
+func (cfg *apiConfig) handlerGetFollows(w http.ResponseWriter, r *http.Request, user database.User) {
+	follows, err := cfg.DB.GetFeedFollows(r.Context(), user.ID)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Unable to get follows")
+		return
+	}
+	responseData := struct {
+		Follows []FeedFollow `json:"follows"`
+	}{
+		make([]FeedFollow, len(follows)),
+	}
+
+	for i, f := range follows {
+		responseData.Follows[i] = databaseFeedfollowToFeedfollow(f)
+	}
+	respondWithJSON(w, http.StatusOK, responseData)
+
+}

@@ -7,3 +7,8 @@ RETURNING *;
 -- name: DeleteFeedFollow :exec
 DELETE FROM feedfollows
     WHERE id=$1;
+
+-- name: GetFeedFollows :many
+SELECT * FROM feedfollows
+WHERE user_id=$1
+ORDER BY CREATED_AT desc;
