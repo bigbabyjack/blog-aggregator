@@ -73,5 +73,4 @@ func (cfg *apiConfig) handlerGetFeeds(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusOK, response)
-
 }

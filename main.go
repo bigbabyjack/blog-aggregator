@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/bigbabyjack/blog-aggregator/internal/database"
 	"github.com/joho/godotenv"
@@ -12,7 +13,8 @@ import (
 )
 
 type apiConfig struct {
-	DB *database.Queries
+	DB     *database.Queries
+	client *http.Client
 }
 
 func main() {
@@ -32,7 +34,8 @@ func main() {
 	dbQueries := database.New(db)
 
 	cfg := apiConfig{
-		DB: dbQueries,
+		DB:     dbQueries,
+		client: &http.Client{Timeout: time.Second * 30},
 	}
 
 	mux := http.NewServeMux()
@@ -45,6 +48,8 @@ func main() {
 	mux.HandleFunc("POST /v1/feed_follows", cfg.middlewareAuth(cfg.handlerPostFollow))
 	mux.HandleFunc("DELETE /v1/feed_follows/{feedFollowID}", cfg.handlerDeleteFollow)
 	mux.HandleFunc("GET /v1/feed_follows", cfg.middlewareAuth(cfg.handlerGetFollows))
+
+	cfg.fetchFeedData("https://blog.boot.dev/index.xml")
 
 	srv := &http.Server{
 		Addr:    ":" + port,
