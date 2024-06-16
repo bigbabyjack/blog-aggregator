@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -33,8 +34,27 @@ func (cfg *apiConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Request, 
 		respondWithError(w, http.StatusInternalServerError, "Unable to create feed")
 		return
 	}
+	feedfollowParams := database.FollowFeedParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+		UserID:    user.ID,
+		FeedID:    feed.ID,
+	}
 
-	respondWithJSON(w, http.StatusCreated, databaseFeedToFeed(feed))
+	followFeed, err := cfg.DB.FollowFeed(r.Context(), feedfollowParams)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error following feed", err.Error()))
+		return
+	}
+	responseData := struct {
+		Feed       Feed       `json:"feed"`
+		FeedFollow FeedFollow `json:"feed_follow"`
+	}{
+		databaseFeedToFeed(feed),
+		databaseFeedfollowToFeedfollow(followFeed),
+	}
+	respondWithJSON(w, http.StatusCreated, responseData)
 }
 
 func (cfg *apiConfig) handlerGetFeeds(w http.ResponseWriter, r *http.Request) {
