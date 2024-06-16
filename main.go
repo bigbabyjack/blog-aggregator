@@ -49,7 +49,7 @@ func main() {
 	mux.HandleFunc("DELETE /v1/feed_follows/{feedFollowID}", cfg.handlerDeleteFollow)
 	mux.HandleFunc("GET /v1/feed_follows", cfg.middlewareAuth(cfg.handlerGetFollows))
 
-	cfg.fetchFeedData("https://blog.boot.dev/index.xml")
+	go cfg.fetchFeedWorker(10)
 
 	srv := &http.Server{
 		Addr:    ":" + port,

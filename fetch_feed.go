@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"encoding/xml"
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
+	"time"
 )
 
 type Item struct {
@@ -56,5 +59,54 @@ func (cfg *apiConfig) fetchFeedData(url string) (RSSFeed, error) {
 	}
 
 	log.Println("Successfully decoded data for url " + url)
+	log.Printf("Number of items in the feed: %d\n", len(data.Channel.Items))
+	log.Println("Titles for url: " + url)
+	for _, item := range data.Channel.Items {
+		fmt.Println(item.Title)
+	}
 	return data, nil
+}
+
+func (cfg *apiConfig) fetchFeedWorker(n int32) {
+	ticker := time.NewTicker(60 * time.Second)
+	defer ticker.Stop()
+
+	fetchAndUpdate := func() {
+		dbFeed, err := cfg.DB.GetNextFeedsToFetch(context.Background(), n)
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
+
+		var wg sync.WaitGroup
+		for _, feed := range dbFeed {
+			f := databaseFeedToFeed(feed)
+			wg.Add(1)
+			go func(url string) {
+				defer wg.Done()
+				if _, err := cfg.fetchFeedData(url); err != nil {
+					log.Printf("Error fetching feed data for URL %s: %v", url, err)
+					return
+				}
+				now := time.Now().UTC()
+				p := markFeedFetchedParams{
+					ID:            f.ID,
+					LastFetchedAt: &now,
+				}
+
+				if _, err := cfg.DB.MarkFeedFetched(context.Background(), cfg.markFeedToDatabaseMarkFeedParams(p)); err != nil {
+					log.Printf("Successfully updated feed %v", f.ID)
+					return
+				}
+			}(f.URL)
+		}
+
+		wg.Wait()
+	}
+
+	fetchAndUpdate()
+
+	for range ticker.C {
+		fetchAndUpdate()
+	}
 }

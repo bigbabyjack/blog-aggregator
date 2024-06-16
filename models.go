@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/bigbabyjack/blog-aggregator/internal/database"
@@ -30,7 +31,7 @@ type Feed struct {
 	CreatedAt     time.Time  `json:"created_at"`
 	UpdatedAt     time.Time  `json:"updated_at"`
 	Name          string     `json:"name"`
-	Url           string     `json:"url"`
+	URL           string     `json:"url"`
 	UserID        uuid.UUID  `json:"user_id"`
 	LastFetchedAt *time.Time `json:"last_fetched_at"`
 }
@@ -41,7 +42,7 @@ func databaseFeedToFeed(feed database.Feed) Feed {
 		CreatedAt:     feed.CreatedAt,
 		UpdatedAt:     feed.UpdatedAt,
 		Name:          feed.Name,
-		Url:           feed.Url,
+		URL:           feed.Url,
 		UserID:        feed.UserID,
 		LastFetchedAt: &feed.LastFetchedAt.Time,
 	}
@@ -62,5 +63,20 @@ func databaseFeedfollowToFeedfollow(feedfollow database.Feedfollow) FeedFollow {
 		UpdatedAt: feedfollow.UpdatedAt,
 		UserID:    feedfollow.UserID,
 		FeedID:    feedfollow.FeedID,
+	}
+}
+
+type markFeedFetchedParams struct {
+	ID            uuid.UUID
+	LastFetchedAt *time.Time
+}
+
+func (cfg *apiConfig) markFeedToDatabaseMarkFeedParams(p markFeedFetchedParams) database.MarkFeedFetchedParams {
+	return database.MarkFeedFetchedParams{
+		ID: p.ID,
+		LastFetchedAt: sql.NullTime{
+			Time:  *p.LastFetchedAt,
+			Valid: true,
+		},
 	}
 }
