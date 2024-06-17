@@ -8,6 +8,9 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/bigbabyjack/blog-aggregator/internal/database"
+	"github.com/google/uuid"
 )
 
 type Item struct {
@@ -59,11 +62,9 @@ func (cfg *apiConfig) fetchFeedData(url string) (RSSFeed, error) {
 	}
 
 	log.Println("Successfully decoded data for url " + url)
-	log.Printf("Number of items in the feed: %d\n", len(data.Channel.Items))
+	// log.Printf("Number of items in the feed: %d\n", len(data.Channel.Items))
 	log.Println("Titles for url: " + url)
-	for _, item := range data.Channel.Items {
-		fmt.Println(item.Title)
-	}
+	// TODO: create posts
 	return data, nil
 }
 
@@ -84,9 +85,35 @@ func (cfg *apiConfig) fetchFeedWorker(n int32) {
 			wg.Add(1)
 			go func(url string) {
 				defer wg.Done()
-				if _, err := cfg.fetchFeedData(url); err != nil {
+				data, err := cfg.fetchFeedData(url)
+				if err != nil {
 					log.Printf("Error fetching feed data for URL %s: %v", url, err)
 					return
+				}
+				for _, item := range data.Channel.Items {
+					log.Println(item.Title)
+					publishedAt, err := time.Parse(time.RFC1123Z, item.PubDate)
+					if err != nil {
+						log.Printf("Error parsing time: %v", err)
+						return
+					}
+					postParams := database.CreatePostParams{
+						ID:          uuid.New(),
+						CreatedAt:   time.Now().UTC(),
+						UpdatedAt:   time.Now().UTC(),
+						Title:       item.Title,
+						Url:         item.Link,
+						Description: item.Description,
+						FeedID:      f.ID,
+						PublishedAt: publishedAt,
+					}
+					if _, err = cfg.DB.CreatePost(context.Background(), postParams); err != nil {
+						log.Printf("Error creating post: %v", err)
+						return
+					}
+
+					log.Printf("Successfully created post %v", postParams.ID)
+
 				}
 				now := time.Now().UTC()
 				p := markFeedFetchedParams{
