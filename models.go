@@ -80,3 +80,27 @@ func (cfg *apiConfig) markFeedToDatabaseMarkFeedParams(p markFeedFetchedParams) 
 		},
 	}
 }
+
+type Post struct {
+	ID          uuid.UUID
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	Title       string
+	Url         string
+	Description string
+	PublishedAt time.Time
+	FeedID      uuid.UUID
+}
+
+func databasePostToPost(p database.Post) Post {
+	return Post{
+		ID:          p.ID,
+		CreatedAt:   p.CreatedAt,
+		UpdatedAt:   p.UpdatedAt,
+		Title:       p.Title,
+		Url:         p.Url,
+		Description: p.Description,
+		PublishedAt: p.PublishedAt,
+		FeedID:      p.FeedID,
+	}
+}
